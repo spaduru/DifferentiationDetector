@@ -14,7 +14,7 @@ USAGE:
 import sys, multiprocessing, json, datetime, logging
 import tornado.ioloop, tornado.web
 from python_lib import *
-import db as DB
+#import db as DB
 sys.path.append('testHypothesis')
 import testHypothesis as TH
 import finalAnalysis as FA
@@ -33,7 +33,6 @@ def processResult(results):
                   'historyCount': res['historyCount'], 
                   'replayName'  : res['replayName'],
                   'date'        : res['date']}
-        
         if res['area_vpn'] != -1:
             outres['against'] = 'vpn'
             
@@ -56,7 +55,6 @@ def processResult(results):
             else:
                 outres['rate'] = 0
                 outres['diff'] = 0
-        
         elif res['area_random'] != -1:
             outres['against'] = 'random'
             
@@ -74,7 +72,6 @@ def processResult(results):
             elif (areaT <= res['area_random']) and (1-res['ks2_ratio_random'] >= ks2T):     #both saying differentiation
                 outres['rate'] = (res['xput_avg_novpn'] - res['xput_avg_random'])/min(res['xput_avg_novpn'], res['xput_avg_random'])
                 outres['diff'] = 1
-        
         output.append(outres)
         
     return output
@@ -83,15 +80,16 @@ def analyzer(args, resultsFolder, xputInterval, alpha):
     global db
     
     LOG_ACTION(logger, 'analyzer:'+str(args))
-    args = json.loads(args)
+    #args = json.loads(args)
     
     resObj = FA.finalAnalyzer(args['userID'][0], args['historyCount'][0], resultsFolder, xputInterval, alpha)
-    
-    try:
-        db.insertResult(resObj)
-        db.updateReplayXputInfo(resObj)
-    except Exception as e:
-        LOG_ACTION(logger, 'Insertion exception:'+str(e), level=logging.ERROR)
+    return [resObj.__dict__]
+ 
+    #try:
+    #   db.insertResult(resObj)
+    #   db.updateReplayXputInfo(resObj)
+    #except Exception as e:
+    #   LOG_ACTION(logger, 'Insertion exception:'+str(e), level=logging.ERROR)
     
 def jobDispatcher(q, processes=4):
     resultsFolder = Configs().get('resultsFolder')
@@ -137,7 +135,11 @@ def getHandler(args):
             historyCount = None
         
         try:
-            response = db.getSingleResult(userID, historyCount=historyCount)
+            resultsFolder = Configs().get('resultsFolder')
+            xputInterval  = Configs().get('xputInterval')
+            alpha         = Configs().get('alpha')
+            response = analyzer(args, resultsFolder, xputInterval, alpha)
+            #response = db.getSingleResult(userID, historyCount=historyCount)
             response = processResult(response)
             return json.dumps({'success':True, 'response':response}, cls=myJsonEncoder)
         except Exception as e:
@@ -220,7 +222,7 @@ def main():
     global db
     
     PRINT_ACTION('Checking tshark version', 0)
-    TH.checkTsharkVersion('1.8')
+    #TH.checkTsharkVersion('1.8')
     
     configs = Configs()
     configs.set('GETprocesses' , 4)
@@ -247,7 +249,7 @@ def main():
     
     configs.show_all()
     
-    db = DB.DB()
+    #db = DB.DB()
     
     LOG_ACTION(logger, 'Starting server. Configs: '+str(configs), doPrint=False)
     

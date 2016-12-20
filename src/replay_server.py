@@ -30,11 +30,11 @@ import gevent.monkey; gevent.monkey.patch_all()
 
 import sys, time, numpy, pickle, atexit, re, json, socket, urllib2, random, base64, string
 from python_lib import *
-try:
-    import db as DB
-except:
-    print '\n\nNO DATABASE AVAILABLE\n\n'
-    DB = None
+#try:
+#    import db as DB
+#except:
+#    print '\n\nNO DATABASE AVAILABLE\n\n'
+DB = None
 import subprocess
 import gevent, gevent.pool, gevent.server, gevent.queue, gevent.select
 from gevent.coros import RLock
