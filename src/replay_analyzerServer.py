@@ -81,9 +81,8 @@ def analyzer(args, resultsFolder, xputInterval, alpha):
     
     LOG_ACTION(logger, 'analyzer:'+str(args))
     #args = json.loads(args)
-    
     resObj = FA.finalAnalyzer(args['userID'][0], args['historyCount'][0], resultsFolder, xputInterval, alpha)
-    return [resObj.__dict__]
+    return resObj.__dict__
  
     #try:
     #   db.insertResult(resObj)
@@ -127,7 +126,10 @@ def getHandler(args):
         userID       = args['userID'][0]
     except KeyError as e:
         return json.dumps({'success':False, 'missing':str(e)})
-    
+    resultsFolder = Configs().get('resultsFolder')
+    xputInterval  = Configs().get('xputInterval')
+    alpha         = Configs().get('alpha')
+
     if command == 'singleResult':
         try:
             historyCount = int(args['historyCount'][0])
@@ -135,10 +137,7 @@ def getHandler(args):
             historyCount = None
         
         try:
-            resultsFolder = Configs().get('resultsFolder')
-            xputInterval  = Configs().get('xputInterval')
-            alpha         = Configs().get('alpha')
-            response = analyzer(args, resultsFolder, xputInterval, alpha)
+            response = [analyzer(args, resultsFolder, xputInterval, alpha)]
             #response = db.getSingleResult(userID, historyCount=historyCount)
             response = processResult(response)
             return json.dumps({'success':True, 'response':response}, cls=myJsonEncoder)
@@ -157,7 +156,11 @@ def getHandler(args):
             limit = None
         
         try:
-            response = db.getMultiResults(userID, maxHistoryCount=maxHistoryCount, limit=limit)
+            response = []
+            for i in range(0, maxHistoryCount):
+                args['historyCount'] = [str(i)]
+                response.append(analyzer(args, resultsFolder, xputInterval, alpha))
+            #response = db.getMultiResults(userID, maxHistoryCount=maxHistoryCount, limit=limit)
             response = processResult(response)
             return json.dumps({'success':True, 'response':response}, cls=myJsonEncoder)
         except Exception as e:
